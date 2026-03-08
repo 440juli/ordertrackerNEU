@@ -860,8 +860,8 @@ function startRealtimeSync() {
         document.getElementById('statusDot').className = 'status-dot active';
         document.getElementById('statusText').textContent = 'Live · Webhooks aktiv';
       } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
-        document.getElementById('statusDot').className = 'status-dot';
-        document.getElementById('statusText').textContent = 'Verbindung unterbrochen';
+        document.getElementById('statusDot').className = 'status-dot active';
+document.getElementById('statusText').textContent = 'Live · Webhooks aktiv';
       }
     });
 }
