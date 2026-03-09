@@ -362,6 +362,8 @@ let tabModalMode = 'new', renamingTabId = null, pickedColor = COLORS[0];
 let entryTargetTabId = null;
 let currentUser = null;
 let saveTimer = null;
+let lastSavedAt = null;
+let lastPolledAt = null;
 
 // ══════════════════════════════════════════════════
 // AUTH
@@ -474,6 +476,7 @@ async function loadFromSupabase() {
 }
 
 async function saveToSupabase() {
+  lastSavedAt = new Date();
   if (!currentUser) return;
   showSaving(true);
   try {
@@ -904,22 +907,6 @@ function copyUrl(url) { navigator.clipboard.writeText(url).then(()=>showToast('�
 function startRealtimeSync() {
   document.getElementById("statusDot").className = "status-dot active";
   document.getElementById("statusText").textContent = "Live · Webhooks aktiv";
-  // Poll every 10s for new data (realtime without SDK)
-  setInterval(async () => {
-    try {
-      const res = await dbFetch(`/dashboard_state?user_id=eq.${currentUser.id}&select=state,updated_at`);
-      const rows = await res.json();
-      if (rows?.[0]?.state) {
-        const newState = rows[0].state;
-        if (JSON.stringify(newState) !== JSON.stringify(state)) {
-          state = newState;
-          renderTabBar();
-          state.tabs.forEach(tab => { const p = document.getElementById("panel_"+tab.id); if(p) fillPanel(tab.id); });
-          showToast("📦 Neue Daten geladen!");
-        }
-      }
-    } catch(e) {}
-  }, 10000);
 }
 
 // ══════════════════════════════════════════════════
