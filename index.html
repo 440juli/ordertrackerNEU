@@ -337,8 +337,8 @@ td { padding:11px 14px; font-size:12px; color:var(--text); white-space:nowrap; }
 // ══════════════════════════════════════════════════
 // CONFIG  ← diese zwei Zeilen werden vom Setup befüllt
 // ══════════════════════════════════════════════════
-const SUPABASE_URL = 'https://cyevfuadksidwqoyzhhr.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN5ZXZmdWFka3NpZHdxb3l6aGhyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI5Njk1NTcsImV4cCI6MjA4ODU0NTU1N30.y9oDckUgt7B36ZbW--EIgb-GOuYsdaHx_gryX2IqdoI';
+const SUPABASE_URL = 'REPLACE_SUPABASE_URL';
+const SUPABASE_ANON_KEY = 'REPLACE_SUPABASE_ANON_KEY';
 
 // Direct REST API — no SDK needed
 let _accessToken = localStorage.getItem('sb_access_token') || null;
@@ -440,6 +440,14 @@ async function doRegister() {
   const msg   = document.getElementById('registerMsg');
   if (!email||!pass) { msg.textContent='Bitte alle Felder ausfüllen.'; return; }
   if (pass.length < 6) { msg.textContent='Passwort muss mind. 6 Zeichen haben.'; return; }
+  // ── Whitelist: nur erlaubte E-Mails dürfen sich registrieren
+  const ALLOWED = ['julianott.business@gmail.com'];
+  if (!ALLOWED.includes(email.toLowerCase())) {
+    msg.className='login-err';
+    msg.textContent='❌ Registrierung nicht erlaubt. Kontaktiere den Administrator.';
+    btn.textContent='Account erstellen';
+    return;
+  }
   btn.innerHTML = '<span class="spin"></span>';
   msg.textContent = '';
   const data = await apiAuth('/signup', { email, password: pass });
@@ -988,17 +996,16 @@ function showEditModal(tabId, orderId) {
   editTargetOrderId = orderId;
   editSkuImageUrl = order.imageUrl || '';
 
-  document.getElementById('e_sku').value          = order.sku || '';
-  document.getElementById('e_product').value      = order.product || '';
-  document.getElementById('e_date').value         = order.date || '';
-  document.getElementById('e_size').value         = order.size === '—' ? '' : (order.size || '');
-  document.getElementById('e_purchasePrice').value= order.purchasePrice || '';
-  document.getElementById('e_shop').value         = order.shop === '—' ? '' : (order.shop || '');
-  document.getElementById('e_orderNumber').value  = order.orderNumber === '—' ? '' : (order.orderNumber || '');
-  document.getElementById('e_note').value         = order.note || '';
+  document.getElementById('e_sku').value           = order.sku || '';
+  document.getElementById('e_product').value       = order.product || '';
+  document.getElementById('e_date').value          = order.date || '';
+  document.getElementById('e_size').value          = order.size === '—' ? '' : (order.size || '');
+  document.getElementById('e_purchasePrice').value = order.purchasePrice || '';
+  document.getElementById('e_shop').value          = order.shop === '—' ? '' : (order.shop || '');
+  document.getElementById('e_orderNumber').value   = order.orderNumber === '—' ? '' : (order.orderNumber || '');
+  document.getElementById('e_note').value          = order.note || '';
 
-  // Show existing image preview
-  const prev = document.getElementById('editSkuImgPreview');
+  const prev   = document.getElementById('editSkuImgPreview');
   const status = document.getElementById('editSkuStatus');
   if (editSkuImageUrl) {
     prev.innerHTML = `<img src="${editSkuImageUrl}" style="width:100%;height:100%;object-fit:contain;border-radius:8px;" onerror="this.parentElement.innerHTML='👟'">`;
@@ -1024,34 +1031,26 @@ function closeEditModal() {
 function onEditSkuInput(val) {
   clearTimeout(editSkuTimer);
   const sku = val.trim().toUpperCase();
+  const prev   = document.getElementById('editSkuImgPreview');
+  const status = document.getElementById('editSkuStatus');
   if (!sku || sku.length < 4) {
-    document.getElementById('editSkuImgPreview').innerHTML = '👟';
-    document.getElementById('editSkuImgPreview').style.borderColor = 'var(--border)';
-    document.getElementById('editSkuImgPreview').style.boxShadow = 'none';
-    document.getElementById('editSkuStatus').textContent = '';
-    editSkuImageUrl = '';
-    return;
+    prev.innerHTML = '👟'; prev.style.borderColor='var(--border)'; prev.style.boxShadow='none';
+    status.textContent=''; editSkuImageUrl=''; return;
   }
-  document.getElementById('editSkuStatus').textContent = '⏳ Bild wird gesucht…';
-  document.getElementById('editSkuStatus').style.color = 'var(--text-dim)';
+  status.textContent='⏳ Bild wird gesucht…'; status.style.color='var(--text-dim)';
   editSkuTimer = setTimeout(async () => {
     let url = await tryKicksDB(sku);
     if (!url) url = await trySneakerDB(sku);
     if (!url) url = await tryGoogleImageScrape(sku);
     if (url) {
       editSkuImageUrl = url;
-      const prev = document.getElementById('editSkuImgPreview');
       prev.innerHTML = `<img src="${url}" style="width:100%;height:100%;object-fit:contain;border-radius:8px;" onerror="this.parentElement.innerHTML='❓'">`;
-      prev.style.borderColor = 'var(--accent3)';
-      prev.style.boxShadow   = '0 0 14px rgba(106,255,202,0.3)';
-      document.getElementById('editSkuStatus').textContent = '✓ Bild gefunden';
-      document.getElementById('editSkuStatus').style.color = 'var(--success)';
+      prev.style.borderColor='var(--accent3)'; prev.style.boxShadow='0 0 14px rgba(106,255,202,0.3)';
+      status.textContent='✓ Bild gefunden'; status.style.color='var(--success)';
     } else {
-      editSkuImageUrl = '';
-      document.getElementById('editSkuImgPreview').innerHTML = '❓';
-      document.getElementById('editSkuImgPreview').style.borderColor = 'var(--border)';
-      document.getElementById('editSkuStatus').textContent = `Kein Bild für "${sku}"`;
-      document.getElementById('editSkuStatus').style.color = 'var(--text-dim)';
+      editSkuImageUrl='';
+      prev.innerHTML='❓'; prev.style.borderColor='var(--border)'; prev.style.boxShadow='none';
+      status.textContent=`Kein Bild für "${sku}"`; status.style.color='var(--text-dim)';
     }
   }, 800);
 }
@@ -1063,25 +1062,22 @@ function saveEditEntry() {
   const order = tab?.orders.find(o => o.id === editTargetOrderId);
   if (!order) return;
 
-  order.product      = product;
-  order.sku          = document.getElementById('e_sku').value.trim().toUpperCase() || '';
-  order.imageUrl     = editSkuImageUrl || order.imageUrl || '';
-  order.date         = document.getElementById('e_date').value;
-  order.size         = document.getElementById('e_size').value.trim() || '—';
-  order.purchasePrice= document.getElementById('e_purchasePrice').value || 0;
-  order.shop         = document.getElementById('e_shop').value.trim() || '—';
-  order.orderNumber  = document.getElementById('e_orderNumber').value.trim() || '—';
-  order.note         = document.getElementById('e_note').value.trim();
-  order.editedAt     = new Date().toISOString();
+  order.product       = product;
+  order.sku           = document.getElementById('e_sku').value.trim().toUpperCase() || '';
+  order.imageUrl      = editSkuImageUrl || order.imageUrl || '';
+  order.date          = document.getElementById('e_date').value;
+  order.size          = document.getElementById('e_size').value.trim() || '—';
+  order.purchasePrice = document.getElementById('e_purchasePrice').value || 0;
+  order.shop          = document.getElementById('e_shop').value.trim() || '—';
+  order.orderNumber   = document.getElementById('e_orderNumber').value.trim() || '—';
+  order.note          = document.getElementById('e_note').value.trim();
+  order.editedAt      = new Date().toISOString();
 
-  saveState();
-  renderTabBar();
-  fillPanel(editTargetTabId);
+  saveState(); renderTabBar(); fillPanel(editTargetTabId);
   closeEditModal();
   showToast('✏️ Eintrag gespeichert!');
 }
 
-// Close edit modal on backdrop click
 document.getElementById('editModal').addEventListener('click', e => {
   if (e.target.id === 'editModal') closeEditModal();
 });
